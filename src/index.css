@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animate-popIn {
+    animation: popIn 0.4s ease-out forwards;
+  }
+}
