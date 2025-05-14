@@ -1,181 +1,256 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useBlockchain } from '../context/BlockchainContext';
+import {
+  Container,
+  Typography,
+  Paper,
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Button,
+  Box,
+} from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import RefreshIcon from '@mui/icons-material/Refresh';
+
+// Debug: Log React instance
+console.log('React instance in VerificationRequests.jsx:', React);
 
 const VerificationRequests = () => {
-  const [verificationRequests, setVerificationRequests] = useState([]);
+  const { account, contracts, connectWallet, networkError } = useBlockchain();
+  const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const fetchVerificationRequests = async () => {
-    setLoading(true);
-    setError(null);
+  // Debug: Log state on render
+  console.log('Rendering VerificationRequests - Account:', account, 'Contracts.admin:', contracts.admin);
+
+  const fetchRequests = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('http://localhost:5000/api/verification/requests');
-      if (response.data.length === 0) {
-        setNotification({ message: 'No verification requests found in the database.', type: 'info' });
-      }
-      setVerificationRequests(response.data);
-      applyFilter(response.data, statusFilter);
-    } catch (err) {
-      console.error("Error fetching verification requests:", err);
-      setError(`Failed to load verification requests: ${err.message}`);
-      setNotification({ message: `Failed to load verification requests: ${err.message}`, type: 'error' });
-    } finally {
+      const formattedRequests = response.data.map((request, index) => ({
+        id: index,
+        walletAddress: request.walletAddress,
+        role: request.role,
+        status: request.status,
+        createdAt: new Date(request.createdAt).toLocaleString(),
+        updatedAt: new Date(request.updatedAt).toLocaleString(),
+      }));
+      setRequests(formattedRequests);
+      setFilteredRequests(formattedRequests);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching verification requests:', error);
+      toast.error('Failed to fetch verification requests');
       setLoading(false);
     }
   };
 
-  const applyFilter = (requests, filter) => {
-    if (filter === 'all') {
-      setFilteredRequests(requests);
-    } else {
-      setFilteredRequests(requests.filter((req) => req.status === filter));
-    }
-  };
+  useEffect(() => {
+    fetchRequests();
+  }, []);
 
-  const handleVerification = async (walletAddress, role, status) => {
+  useEffect(() => {
+    let filtered = requests;
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((request) => request.status === statusFilter);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((request) =>
+        request.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredRequests(filtered);
+  }, [searchTerm, statusFilter, requests]);
+
+  const handleAction = async (walletAddress, role, action) => {
     try {
       const response = await axios.post('http://localhost:5000/api/verification/approve', {
         walletAddress,
         role,
-        status,
+        status: action,
       });
-      setNotification({ message: `Request ${status} successfully!`, type: 'success' });
-      fetchVerificationRequests();
-    } catch (err) {
-      console.error(`Error ${status}ing request:`, err);
-      setNotification({ message: `Failed to ${status} request: ${err.message}`, type: 'error' });
+
+      if (response.data.success) {
+        toast.success(`Request ${action} successfully`);
+        fetchRequests();
+      } else {
+        toast.error(`Failed to ${action} request`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing request:`, error);
+      toast.error(`Failed to ${action} request: ${error.response?.data?.error || error.message}`);
     }
   };
 
-  const handleFilterChange = (e) => {
-    const newFilter = e.target.value;
-    setStatusFilter(newFilter);
-    applyFilter(verificationRequests, newFilter);
-  };
+  const columns = [
+    { field: 'walletAddress', headerName: 'Wallet Address', width: 300 },
+    { field: 'role', headerName: 'Role', width: 150 },
+    { field: 'status', headerName: 'Status', width: 150 },
+    { field: 'createdAt', headerName: 'Created At', width: 200 },
+    { field: 'updatedAt', headerName: 'Updated At', width: 200 },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 200,
+      renderCell: (params) => (
+        <>
+          {params.row.status === 'pending' && (
+            <>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() => handleAction(params.row.walletAddress, params.row.role, 'approved')}
+                sx={{ mr: 1 }}
+              >
+                Approve
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={() => handleAction(params.row.walletAddress, params.row.role, 'rejected')}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+        </>
+      ),
+    },
+  ];
 
-  useEffect(() => {
-    fetchVerificationRequests();
-  }, []);
+  if (loading) {
+    return (
+      <Container sx={{ mt: 4, textAlign: 'center' }}>
+        <Typography variant="h6">Loading...</Typography>
+      </Container>
+    );
+  }
 
-  useEffect(() => {
-    if (notification.message) {
-      const timer = setTimeout(() => {
-        setNotification({ message: '', type: '' });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
+  if (!account) {
+    return (
+      <Container sx={{ mt: 4, textAlign: 'center' }}>
+        <Typography variant="h5" color="error">
+          Please connect your wallet.
+        </Typography>
+        {networkError && (
+          <Typography variant="body1" color="error" sx={{ mt: 2 }}>
+            {networkError}
+          </Typography>
+        )}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={connectWallet}
+          sx={{ mt: 2 }}
+        >
+          Connect Wallet
+        </Button>
+      </Container>
+    );
+  }
+
+  if (!contracts.admin) {
+    return (
+      <Container sx={{ mt: 4, textAlign: 'center' }}>
+        <Typography variant="h5" color="error">
+          Admin contract not initialized.
+        </Typography>
+        {networkError && (
+          <Typography variant="body1" color="error" sx={{ mt: 2 }}>
+            {networkError}
+          </Typography>
+        )}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={connectWallet}
+          sx={{ mt: 2 }}
+        >
+          Retry Connection
+        </Button>
+      </Container>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-6 text-center">Admin Dashboard - Verification Requests</h1>
+    <Container sx={{ mt: 4, mb: 4 }}>
+      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" gutterBottom>
+            Admin Dashboard - Verification Requests
+          </Typography>
+          <Typography variant="body1">
+            Connected Account: {account}
+          </Typography>
+        </Box>
 
-        {notification.message && (
-          <div
-            className={`mb-4 p-4 rounded-lg text-center ${
-              notification.type === 'success'
-                ? 'bg-green-500'
-                : notification.type === 'error'
-                ? 'bg-red-500'
-                : 'bg-blue-500'
-            } text-white`}
-          >
-            {notification.message}
-          </div>
-        )}
-
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <label htmlFor="statusFilter" className="mr-2">Filter by Status:</label>
-            <select
-              id="statusFilter"
+        <Box display="flex" justifyContent="space-between" mb={3}>
+          <TextField
+            label="Search by Wallet Address"
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: '30%' }}
+          />
+          <FormControl sx={{ width: '20%' }}>
+            <InputLabel>Filter by Status</InputLabel>
+            <Select
               value={statusFilter}
-              onChange={handleFilterChange}
-              className="bg-gray-800 text-white p-2 rounded"
+              onChange={(e) => setStatusFilter(e.target.value)}
+              label="Filter by Status"
             >
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          <button
-            onClick={fetchVerificationRequests}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            disabled={loading}
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="approved">Approved</MenuItem>
+              <MenuItem value="rejected">Rejected</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            startIcon={<RefreshIcon />}
+            onClick={fetchRequests}
+            sx={{ height: 'fit-content' }}
           >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
+            Refresh
+          </Button>
+        </Box>
 
-        {loading && <p className="text-center">Loading...</p>}
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        {filteredRequests.length === 0 && !loading && !error && (
-          <p className="text-center">No verification requests match the current filter.</p>
+        {filteredRequests.length === 0 ? (
+          <Typography variant="body1" sx={{ textAlign: 'center', py: 4 }}>
+            No verification requests found.
+          </Typography>
+        ) : (
+          <Box sx={{ height: 400, width: '100%' }}>
+            <DataGrid
+              rows={filteredRequests}
+              columns={columns}
+              pageSize={rowsPerPage}
+              rowsPerPageOptions={[5, 10, 20]}
+              onPageSizeChange={(newPageSize) => setRowsPerPage(newPageSize)}
+              page={page}
+              onPageChange={(newPage) => setPage(newPage)}
+              pagination
+              disableSelectionOnClick
+            />
+          </Box>
         )}
-
-        {filteredRequests.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full bg-gray-800 rounded-lg">
-              <thead>
-                <tr>
-                  <th className="p-4 text-left">Wallet Address</th>
-                  <th className="p-4 text-left">Role</th>
-                  <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-left">Created At</th>
-                  <th className="p-4 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.map((request) => (
-                  <tr key={`${request.walletAddress}-${request.role}`} className="border-t border-gray-700">
-                    <td className="p-4">{request.walletAddress}</td>
-                    <td className="p-4">{request.role}</td>
-                    <td className="p-4">
-                      <span
-                        className={`px-2 py-1 rounded ${
-                          request.status === 'pending'
-                            ? 'bg-yellow-500'
-                            : request.status === 'approved'
-                            ? 'bg-green-500'
-                            : 'bg-red-500'
-                        } text-white`}
-                      >
-                        {request.status}
-                      </span>
-                    </td>
-                    <td className="p-4">{new Date(request.createdAt).toLocaleString()}</td>
-                    <td className="p-4">
-                      {request.status === 'pending' && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleVerification(request.walletAddress, request.role, 'approved')}
-                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleVerification(request.walletAddress, request.role, 'rejected')}
-                            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+      </Paper>
+    </Container>
   );
 };
 
