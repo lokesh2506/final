@@ -18,3 +18,14 @@ exports.getMaterials = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch materials" });
   }
 };
+exports.searchMaterials = async (req, res) => {
+  try {
+    const query = req.query.search || '';
+    const regex = new RegExp(query, 'i'); // case-insensitive
+    const materials = await Material.find({ name: regex });
+    res.json(materials);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Failed to search materials" });
+  }
+};

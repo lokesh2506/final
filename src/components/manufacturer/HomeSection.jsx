@@ -1,19 +1,53 @@
 import React from 'react';
 import { FaBoxOpen, FaShoppingCart, FaDollarSign, FaTruck, FaCogs } from 'react-icons/fa';
 
-const HomeSection = () => {
+const HomeSection = ({ stats }) => {
   const metrics = [
-    { metric: 'Total Parts Produced', value: '1200', unit: 'parts', icon: <FaCogs className="w-6 h-6 text-blue-600" />, bgColor: 'blue-50', iconBgColor: 'blue-100' },
-    { metric: 'Total Transactions', value: '450', unit: 'transactions', icon: <FaDollarSign className="w-6 h-6 text-purple-600" />, bgColor: 'purple-50', iconBgColor: 'purple-100' },
-    { metric: 'Parts Shipped to MROs', value: '400', unit: 'parts', icon: <FaTruck className="w-6 h-6 text-green-600" />, bgColor: 'green-50', iconBgColor: 'green-100' },
-    { metric: 'Materials Received', value: '1500', unit: 'kg', icon: <FaBoxOpen className="w-6 h-6 text-orange-600" />, bgColor: 'orange-50', iconBgColor: 'orange-100' },
-    { metric: 'Total Orders Received', value: '250', unit: 'orders', icon: <FaShoppingCart className="w-6 h-6 text-teal-600" />, bgColor: 'teal-50', iconBgColor: 'teal-100' },
+    {
+      metric: 'Total Parts Produced',
+      value: stats.totalPartsProduced || 0,
+      unit: 'parts',
+      icon: <FaCogs className="w-6 h-6 text-blue-600" />,
+      bgColor: 'blue-50',
+      iconBgColor: 'blue-100',
+    },
+    {
+      metric: 'Total Transactions',
+      value: stats.totalTransactions || 0,
+      unit: 'transactions',
+      icon: <FaDollarSign className="w-6 h-6 text-purple-600" />,
+      bgColor: 'purple-50',
+      iconBgColor: 'purple-100',
+    },
+    {
+      metric: 'Parts Shipped to MROs',
+      value: stats.partsShipped || 0,
+      unit: 'parts',
+      icon: <FaTruck className="w-6 h-6 text-green-600" />,
+      bgColor: 'green-50',
+      iconBgColor: 'green-100',
+    },
+    {
+      metric: 'Materials Received',
+      value: stats.materialsReceived || 0,
+      unit: 'kg',
+      icon: <FaBoxOpen className="w-6 h-6 text-orange-600" />,
+      bgColor: 'orange-50',
+      iconBgColor: 'orange-100',
+    },
+    {
+      metric: 'Total Orders Received',
+      value: stats.totalOrdersReceived || 0,
+      unit: 'orders',
+      icon: <FaShoppingCart className="w-6 h-6 text-teal-600" />,
+      bgColor: 'teal-50',
+      iconBgColor: 'teal-100',
+    },
   ];
 
   return (
     <div className="home-section py-12">
       <div className="container mx-auto px-4">
-      
         <div className="flex flex-col gap-6">
           {Array.from({ length: Math.ceil(metrics.length / 2) }, (_, rowIndex) => (
             <div key={rowIndex} className="flex justify-center gap-6">
@@ -38,7 +72,6 @@ const HomeSection = () => {
                   </div>
                 </div>
               ))}
-              {/* Add an empty div to maintain layout if the row has only one card */}
               {metrics.slice(rowIndex * 2, (rowIndex + 1) * 2).length === 1 && (
                 <div className="w-[calc(50%-0.75rem)] min-w-[300px]"></div>
               )}

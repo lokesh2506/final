@@ -1,16 +1,16 @@
-const Supplier = require("../models/Supplier");
+const Material = require('../models/Material');
 
-exports.addSupplier = async (req, res) => {
+exports.addMaterial = async (req, res) => {
   try {
-    const supplier = new Supplier(req.body);
-    await supplier.save();
-    res.status(201).json(supplier);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    const material = new Material(req.body);
+    await material.save();
+    res.status(201).json({ message: 'Material added', material });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };
 
-exports.getSuppliers = async (req, res) => {
-  const suppliers = await Supplier.find();
-  res.json(suppliers);
+exports.getMaterialsBySupplier = async (req, res) => {
+  const materials = await Material.find({ supplierWallet: req.params.wallet });
+  res.json(materials);
 };

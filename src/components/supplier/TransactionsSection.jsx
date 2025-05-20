@@ -1,55 +1,60 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { BlockchainContext } from '../../context/BlockchainContext';
+import { toast } from 'react-toastify';
 
-const TransactionsSection = ({ account }) => {
-  const { contract } = useContext(BlockchainContext);
+const TransactionsSection = () => {
+  const { account } = useContext(BlockchainContext);
   const [transactions, setTransactions] = useState([]);
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const txs = await contract.getTransactions();
-        const filteredTxs = txs.filter(
-          (tx) =>
-            tx.sender.toLowerCase() === account.toLowerCase() ||
-            tx.receiver.toLowerCase() === account.toLowerCase()
-        );
-        setTransactions(filteredTxs);
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-      }
-    };
-
-    if (contract && account) {
-      fetchTransactions();
+  const fetchTransactions = async () => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/transactions/${account}`);
+      const data = await res.json();
+      setTransactions(data);
+    } catch (err) {
+      console.error('Transaction fetch error:', err);
+      toast.error('❌ Failed to load transactions');
     }
-  }, [contract, account]);
+  };
+
+  useEffect(() => {
+    if (account) fetchTransactions();
+  }, [account]);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Transactions</h2>
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border p-2">Order ID</th>
-            <th className="border p-2">Date</th>
-            <th className="border p-2">From (Supplier)</th>
-            <th className="border p-2">To (Manufacturer)</th>
-            <th className="border p-2">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((tx, index) => (
-            <tr key={index}>
-              <td className="border p-2">{tx.transactionId.toString()}</td>
-              <td className="border p-2">{new Date(tx.timestamp.toNumber() * 1000).toLocaleDateString()}</td>
-              <td className="border p-2">{tx.sender.slice(0, 6)}...{tx.sender.slice(-4)}</td>
-              <td className="border p-2">{tx.receiver.slice(0, 6)}...{tx.receiver.slice(-4)}</td>
-              <td className="border p-2">₹{tx.amount.toString()}</td>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">Transactions</h2>
+
+      {transactions.length === 0 ? (
+        <p className="text-gray-500">No transactions found.</p>
+      ) : (
+        <table className="w-full border-collapse border text-sm">
+          <thead>
+            <tr className="bg-gray-200 text-gray-700">
+              <th className="border p-2">Sl.no</th>
+              <th className="border p-2">Role</th>
+              <th className="border p-2">Wallet</th>
+              <th className="border p-2">Action</th>
+              <th className="border p-2">Timestamp</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {transactions.map((tx, index) => (
+              <tr key={tx._id || index} className="text-gray-800">
+                <td className="border p-2">{index + 1}</td>
+                <td className="border p-2">{tx.role}</td>
+                <td className="border p-2">
+                  {tx.wallet.slice(0, 6)}...{tx.wallet.slice(-4)}
+                </td>
+                <td className="border p-2">{tx.action}</td>
+                <td className="border p-2">
+                  {new Date(tx.timestamp).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

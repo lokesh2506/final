@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 import "./Admin.sol";
 import "./Supplier.sol";
@@ -10,53 +10,81 @@ contract Manufacturer {
     Supplier public supplierContract;
     Transaction public transactionContract;
 
+    constructor(address _admin, address _supplier, address _transaction) {
+        adminContract = Admin(_admin);
+        supplierContract = Supplier(_supplier);
+        transactionContract = Transaction(_transaction);
+    }
+
     struct Order {
-        uint orderId;
+        uint256 id;
         string materialName;
-        uint quantity;
+        uint256 quantity;
+        uint256 totalPrice;
+        address manufacturer;
         address supplier;
-        uint totalPrice;
+        string status; // placed, delivered
     }
 
-    uint public orderCount;
+    uint256 public orderCounter;
+    mapping(uint256 => Order) public orders;
 
-    mapping(uint => Order) public orders;
-
-    event OrderPlaced(uint indexed orderId, string materialName, uint quantity, address supplier, uint totalPrice);
-
-    constructor(address _adminContract, address _supplierContract, address _transactionContract) {
-        adminContract = Admin(_adminContract);
-        supplierContract = Supplier(_supplierContract);
-        transactionContract = Transaction(_transactionContract);
-    }
+    event OrderPlaced(
+        uint256 indexed id,
+        string materialName,
+        uint256 quantity,
+        uint256 totalPrice,
+        address indexed supplier,
+        address indexed manufacturer
+    );
 
     modifier onlyVerifiedManufacturer() {
-        require(adminContract.isVerified(msg.sender, "Manufacturer"), "Not a verified manufacturer");
+        require(adminContract.isVerified(msg.sender, Admin.Role.Manufacturer), "Manufacturer not verified"); // 1 => Manufacturer
         _;
     }
 
     function placeOrder(
-        address supplier,
         string memory materialName,
-        uint quantity,
-        uint totalPrice
+        uint256 quantity,
+        address supplier,
+        uint256 pricePerKg
     ) external payable onlyVerifiedManufacturer {
-        require(msg.value == totalPrice, "Incorrect payment amount");
+        uint256 totalPrice = quantity * pricePerKg;
+        require(msg.value == totalPrice, "Incorrect ETH sent");
 
-        orderCount++;
-        orders[orderCount] = Order(orderCount, materialName, quantity, supplier, totalPrice);
-        supplierContract.receiveOrder(orderCount, materialName, quantity, msg.sender);
+        // Call Supplier.receiveOrder
+        supplierContract.receiveOrder(materialName, quantity, msg.sender, totalPrice);
 
-        transactionContract.recordTransaction(msg.sender, supplier, totalPrice, materialName, orderCount);
-        emit OrderPlaced(orderCount, materialName, quantity, supplier, totalPrice);
+        orderCounter++;
+        orders[orderCounter] = Order(
+            orderCounter,
+            materialName,
+            quantity,
+            totalPrice,
+            msg.sender,
+            supplier,
+            "placed"
+        );
 
+        // Log transaction
+        transactionContract.recordTransaction(
+            msg.sender,
+            supplier,
+            totalPrice,
+            materialName,
+            orderCounter
+        );
+
+        // Transfer payment
         payable(supplier).transfer(totalPrice);
+
+        emit OrderPlaced(orderCounter, materialName, quantity, totalPrice, supplier, msg.sender);
     }
 
-    function getOrders() external view returns (Order[] memory) {
-        Order[] memory result = new Order[](orderCount);
-        for (uint i = 1; i <= orderCount; i++) {
-            result[i - 1] = orders[i];
+    function getAllOrders() external view returns (Order[] memory) {
+        Order[] memory result = new Order[](orderCounter);
+        for (uint256 i = 0; i < orderCounter; i++) {
+            result[i] = orders[i + 1];
         }
         return result;
     }

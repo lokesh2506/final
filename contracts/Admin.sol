@@ -5,56 +5,71 @@ contract Admin {
     address public admin;
 
     enum VerificationStatus { Pending, Approved, Rejected }
-    
+    enum Role { Supplier, Manufacturer, MRO, Airline, RegulatoryAuthority }
+
     struct VerificationRequest {
-        address entityAddress;
-        string role;
+        address user;
+        Role role;
         VerificationStatus status;
     }
 
-    mapping(address => mapping(string => VerificationStatus)) public entityRoles;
-    VerificationRequest[] public verificationRequests;
+    mapping(address => mapping(Role => VerificationStatus)) public userRoles;
+    VerificationRequest[] public requests;
 
-    event VerificationRequested(address indexed entityAddress, string role);
-    event VerificationUpdated(address indexed entityAddress, string role, VerificationStatus status);
+    event VerificationRequested(address indexed user, Role role);
+    event VerificationUpdated(address indexed user, Role role, VerificationStatus status);
 
     constructor() {
         admin = msg.sender;
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can call this function");
+        require(msg.sender == admin, "Only admin can perform this action");
         _;
     }
 
-    function requestVerification(string memory role) external {
-        require(entityRoles[msg.sender][role] == VerificationStatus.Pending, "Verification already requested or processed");
-        entityRoles[msg.sender][role] = VerificationStatus.Pending;
-        verificationRequests.push(VerificationRequest(msg.sender, role, VerificationStatus.Pending));
+    function requestVerification(Role role) external {
+        require(userRoles[msg.sender][role] != VerificationStatus.Pending, "Already requested or verified");
+
+        userRoles[msg.sender][role] = VerificationStatus.Pending;
+        requests.push(VerificationRequest(msg.sender, role, VerificationStatus.Pending));
+
         emit VerificationRequested(msg.sender, role);
     }
 
-    function verifyEntity(address entityAddress, string memory role, bool approve) external onlyAdmin {
-        require(entityRoles[entityAddress][role] == VerificationStatus.Pending, "No pending request for this role");
-        VerificationStatus newStatus = approve ? VerificationStatus.Approved : VerificationStatus.Rejected;
-        entityRoles[entityAddress][role] = newStatus;
+    function approveVerification(address user, Role role) external onlyAdmin {
+        require(userRoles[user][role] == VerificationStatus.Pending, "Request not pending");
 
-        for (uint i = 0; i < verificationRequests.length; i++) {
-            if (verificationRequests[i].entityAddress == entityAddress && 
-                keccak256(abi.encodePacked(verificationRequests[i].role)) == keccak256(abi.encodePacked(role))) {
-                verificationRequests[i].status = newStatus;
+        userRoles[user][role] = VerificationStatus.Approved;
+        updateRequestStatus(user, role, VerificationStatus.Approved);
+
+        emit VerificationUpdated(user, role, VerificationStatus.Approved);
+    }
+
+    function rejectVerification(address user, Role role) external onlyAdmin {
+        require(userRoles[user][role] == VerificationStatus.Pending, "Request not pending");
+
+        userRoles[user][role] = VerificationStatus.Rejected;
+        updateRequestStatus(user, role, VerificationStatus.Rejected);
+
+        emit VerificationUpdated(user, role, VerificationStatus.Rejected);
+    }
+
+    function updateRequestStatus(address user, Role role, VerificationStatus status) internal {
+        for (uint i = 0; i < requests.length; i++) {
+            if (requests[i].user == user && requests[i].role == role) {
+                requests[i].status = status;
                 break;
             }
         }
-
-        emit VerificationUpdated(entityAddress, role, newStatus);
     }
 
-    function getVerificationRequests() external view returns (VerificationRequest[] memory) {
-        return verificationRequests;
+    function getRequests() external view returns (VerificationRequest[] memory) {
+        return requests;
     }
 
-    function isVerified(address entityAddress, string memory role) external view returns (bool) {
-        return entityRoles[entityAddress][role] == VerificationStatus.Approved;
+    // ✅ Updated to check for 'Approved' status
+    function isVerified(address user, Role role) external view returns (bool) {
+        return userRoles[user][role] == VerificationStatus.Approved;
     }
 }

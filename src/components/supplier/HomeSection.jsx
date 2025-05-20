@@ -1,111 +1,59 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { FaBoxOpen, FaShoppingCart, FaDollarSign, FaWeight } from 'react-icons/fa';
 import { BlockchainContext } from '../../context/BlockchainContext';
-import NewMaterialForm from './NewMaterialForm';
-import { toast } from 'react-toastify';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
-const HomeSection = ({ account }) => {
-  const { contract } = useContext(BlockchainContext);
-  const [open, setOpen] = useState(false);
-  const [metrics, setMetrics] = useState({
+const HomeSection = () => {
+  const { account } = useContext(BlockchainContext);
+  const [stats, setStats] = useState({
     totalMaterials: 0,
+    totalQuantity: 0,
     totalOrders: 0,
-    totalTransactions: 0,
+    totalTransactions: 0
   });
 
-  const fetchMetrics = async () => {
-    try {
-      const materialsResponse = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/material/supplier/${account}`
-      );
-      const ordersResponse = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/order/supplier/${account}`
-      );
-      const transactions = await contract.getTransactions();
-      const filteredTxs = transactions.filter(
-        (tx) =>
-          tx.sender.toLowerCase() === account.toLowerCase() ||
-          tx.receiver.toLowerCase() === account.toLowerCase()
-      );
-
-      setMetrics({
-        totalMaterials: materialsResponse.data.length,
-        totalOrders: ordersResponse.data.length,
-        totalTransactions: filteredTxs.length,
-      });
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    }
-  };
-
   useEffect(() => {
-    if (account && contract) {
-      fetchMetrics();
-    }
-  }, [account, contract]);
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/supplier/stats/${account}`);
+        setStats(res.data);
+      } catch (err) {
+        console.error('Failed to fetch supplier stats:', err);
+        toast.error('Failed to load dashboard stats');
+      }
+    };
 
-  const handleAddMaterial = async (materialData) => {
-    try {
-      const { materialName, materialDetails, quantity, serialNumber, batchNumber, certification, certifiedAuthority, pricePerKg } = materialData;
-      const tx = await contract.addMaterial(
-        materialName,
-        quantity,
-        pricePerKg,
-        certification === 'yes',
-        { from: account }
-      );
-      await tx.wait();
+    if (account) fetchStats();
+  }, [account]);
 
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/material`, {
-        materialId: tx.logs[0].args.materialId.toString(),
-        materialName,
-        materialDetails,
-        quantity,
-        serialNumber,
-        batchNumber,
-        certification: certification === 'yes',
-        certifiedAuthority: certification === 'yes' ? certifiedAuthority : '',
-        pricePerKg,
-        supplierAddress: account,
-      });
-
-      toast.success('Material added successfully!');
-      setOpen(false);
-      fetchMetrics();
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to add material.');
-    }
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Supplier Home</h2>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Total Materials</h3>
-          <p>{metrics.totalMaterials}</p>
+  const StatCard = ({ icon: Icon, color, label, value, unit }) => (
+    <div className={`relative bg-${color}-50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200/50`}>
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 bg-${color}-100 rounded-full flex items-center justify-center`}>
+          <Icon className={`w-6 h-6 text-${color}-600`} />
         </div>
-        <div className="bg-green-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Total Orders</h3>
-          <p>{metrics.totalOrders}</p>
-        </div>
-        <div className="bg-yellow-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Total Transactions</h3>
-          <p>{metrics.totalTransactions}</p>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">{label}</h3>
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-extrabold text-gray-900">{(value || 0).toLocaleString()}</p>
+            <span className="text-sm text-gray-500">{unit}</span>
+          </div>
         </div>
       </div>
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Add New Material
-      </button>
-      <NewMaterialForm
-        open={open}
-        handleClose={() => setOpen(false)}
-        handleSubmit={handleAddMaterial}
-      />
+    </div>
+  );
+
+  return (
+    <div className="home-section py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <StatCard icon={FaBoxOpen} color="blue" label="Total Materials" value={stats.totalMaterials} unit="materials" />
+          <StatCard icon={FaWeight} color="indigo" label="Total Quantity" value={stats.totalQuantity} unit="kg" />
+          <StatCard icon={FaShoppingCart} color="green" label="Total Orders" value={stats.totalOrders} unit="orders" />
+          <StatCard icon={FaDollarSign} color="purple" label="Total Transactions" value={stats.totalTransactions} unit="transactions" />
+        </div>
+      </div>
     </div>
   );
 };

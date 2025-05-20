@@ -54,6 +54,7 @@ const Dashboard = () => {
   }
 
   const renderDashboard = () => {
+    console.log(passedRole);
     switch (passedRole) {
       case 'Supplier':
         return <SupplierDashboard />;

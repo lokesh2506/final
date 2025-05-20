@@ -1,22 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const Material = require('../models/Material');
+const {
+  createMaterial,
+  getMaterials,
+  searchMaterials
+} = require('../controllers/materialController');
+router.post('/create', createMaterial);
+router.get('/all', getMaterials);
+router.get('/search', searchMaterials); 
 
 router.get('/search', async (req, res) => {
   try {
-    const { search } = req.query;
-    if (!search) {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-    const materials = await Material.find({
-      name: { $regex: search, $options: 'i' },
-    }).select('name details quantity serialNumber batchNumber certification certifiedAuthority pricePerKg supplierWallet _id');
-    res.json(materials);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const name = req.query.name || '';
+    const results = await Material.find({ name: { $regex: name, $options: 'i' } });
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed' });
   }
 });
-
 router.post('/add', async (req, res) => {
   try {
     const { name, details, quantity, serialNumber, batchNumber, certification, certifiedAuthority, pricePerKg } = req.body;

@@ -2,20 +2,28 @@
 pragma solidity ^0.8.0;
 
 contract Transaction {
-    struct TransactionData {
-        uint transactionId;
+    struct TxLog {
+        uint txId;
         address sender;
         address receiver;
-        uint amount;
         string materialName;
+        uint amount;
         uint orderId;
         uint timestamp;
     }
 
-    uint public transactionCount;
-    mapping(uint => TransactionData) public transactions;
+    uint public txCount;
+    mapping(uint => TxLog) public transactions;
 
-    event TransactionRecorded(uint indexed transactionId, address sender, address receiver, uint amount, string materialName, uint orderId);
+    event TransactionRecorded(
+        uint txId,
+        address indexed sender,
+        address indexed receiver,
+        string materialName,
+        uint amount,
+        uint orderId,
+        uint timestamp
+    );
 
     function recordTransaction(
         address sender,
@@ -24,22 +32,31 @@ contract Transaction {
         string memory materialName,
         uint orderId
     ) external {
-        transactionCount++;
-        transactions[transactionCount] = TransactionData(
-            transactionCount,
+        txCount++;
+        transactions[txCount] = TxLog(
+            txCount,
             sender,
             receiver,
-            amount,
             materialName,
+            amount,
             orderId,
             block.timestamp
         );
-        emit TransactionRecorded(transactionCount, sender, receiver, amount, materialName, orderId);
+
+        emit TransactionRecorded(
+            txCount,
+            sender,
+            receiver,
+            materialName,
+            amount,
+            orderId,
+            block.timestamp
+        );
     }
 
-    function getTransactions() external view returns (TransactionData[] memory) {
-        TransactionData[] memory result = new TransactionData[](transactionCount);
-        for (uint i = 1; i <= transactionCount; i++) {
+    function getAllTransactions() external view returns (TxLog[] memory) {
+        TxLog[] memory result = new TxLog[](txCount);
+        for (uint i = 1; i <= txCount; i++) {
             result[i - 1] = transactions[i];
         }
         return result;

@@ -1,256 +1,166 @@
-import React, { useState, useEffect } from 'react';
-import { useBlockchain } from '../context/BlockchainContext';
-import {
-  Container,
-  Typography,
-  Paper,
-  TextField,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-  Button,
-  Box,
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { getAdminContract } from '../blockchain/AdminContract'; // optional
 import { toast } from 'react-toastify';
-import RefreshIcon from '@mui/icons-material/Refresh';
 
-// Debug: Log React instance
-console.log('React instance in VerificationRequests.jsx:', React);
+const roleLabels = {
+  0: 'Supplier',
+  1: 'Manufacturer',
+  2: 'MRO',
+  3: 'Airline',
+  4: 'Regulatory Authority'
+};
 
 const VerificationRequests = () => {
-  const { account, contracts, connectWallet, networkError } = useBlockchain();
-  const [requests, setRequests] = useState([]);
+  const [verificationRequests, setVerificationRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Debug: Log state on render
-  console.log('Rendering VerificationRequests - Account:', account, 'Contracts.admin:', contracts.admin);
-
-  const fetchRequests = async () => {
+  const fetchVerificationRequests = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const response = await axios.get('http://localhost:5000/api/verification/requests');
-      const formattedRequests = response.data.map((request, index) => ({
-        id: index,
-        walletAddress: request.walletAddress,
-        role: request.role,
-        status: request.status,
-        createdAt: new Date(request.createdAt).toLocaleString(),
-        updatedAt: new Date(request.updatedAt).toLocaleString(),
-      }));
-      setRequests(formattedRequests);
-      setFilteredRequests(formattedRequests);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching verification requests:', error);
-      toast.error('Failed to fetch verification requests');
+      setVerificationRequests(response.data);
+      applyFilter(response.data, statusFilter);
+    } catch (err) {
+      console.error("Error fetching verification requests:", err);
+      setError('❌ Failed to fetch requests');
+    } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  useEffect(() => {
-    let filtered = requests;
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((request) => request.status === statusFilter);
+  const applyFilter = (requests, filter) => {
+    if (filter === 'all') {
+      setFilteredRequests(requests);
+    } else {
+      setFilteredRequests(requests.filter((r) => r.status === filter));
     }
+  };
 
-    if (searchTerm) {
-      filtered = filtered.filter((request) =>
-        request.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredRequests(filtered);
-  }, [searchTerm, statusFilter, requests]);
-
-  const handleAction = async (walletAddress, role, action) => {
+  const handleVerification = async (walletAddress, role, status) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/verification/approve', {
+      // ✅ Choose one method: Smart Contract OR REST
+      // const contract = await getAdminContract();
+      // const tx = status === 'approved'
+      //   ? await contract.approveVerification(walletAddress, parseInt(role))
+      //   : await contract.rejectVerification(walletAddress, parseInt(role));
+      // await tx.wait();
+
+      // OR use REST backend:
+      await axios.post('http://localhost:5000/api/verification/approve', {
         walletAddress,
         role,
-        status: action,
+        status,
       });
 
-      if (response.data.success) {
-        toast.success(`Request ${action} successfully`);
-        fetchRequests();
-      } else {
-        toast.error(`Failed to ${action} request`);
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
-      toast.error(`Failed to ${action} request: ${error.response?.data?.error || error.message}`);
+      toast.success(`✅ Request ${status}`);
+      fetchVerificationRequests();
+    } catch (err) {
+      console.error(err);
+      toast.error(`❌ Failed to ${status}: ${err.message}`);
     }
   };
 
-  const columns = [
-    { field: 'walletAddress', headerName: 'Wallet Address', width: 300 },
-    { field: 'role', headerName: 'Role', width: 150 },
-    { field: 'status', headerName: 'Status', width: 150 },
-    { field: 'createdAt', headerName: 'Created At', width: 200 },
-    { field: 'updatedAt', headerName: 'Updated At', width: 200 },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 200,
-      renderCell: (params) => (
-        <>
-          {params.row.status === 'pending' && (
-            <>
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                onClick={() => handleAction(params.row.walletAddress, params.row.role, 'approved')}
-                sx={{ mr: 1 }}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                size="small"
-                onClick={() => handleAction(params.row.walletAddress, params.row.role, 'rejected')}
-              >
-                Reject
-              </Button>
-            </>
-          )}
-        </>
-      ),
-    },
-  ];
+  const handleFilterChange = (e) => {
+    const value = e.target.value;
+    setStatusFilter(value);
+    applyFilter(verificationRequests, value);
+  };
 
-  if (loading) {
-    return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h6">Loading...</Typography>
-      </Container>
-    );
-  }
-
-  if (!account) {
-    return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h5" color="error">
-          Please connect your wallet.
-        </Typography>
-        {networkError && (
-          <Typography variant="body1" color="error" sx={{ mt: 2 }}>
-            {networkError}
-          </Typography>
-        )}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={connectWallet}
-          sx={{ mt: 2 }}
-        >
-          Connect Wallet
-        </Button>
-      </Container>
-    );
-  }
-
-  if (!contracts.admin) {
-    return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h5" color="error">
-          Admin contract not initialized.
-        </Typography>
-        {networkError && (
-          <Typography variant="body1" color="error" sx={{ mt: 2 }}>
-            {networkError}
-          </Typography>
-        )}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={connectWallet}
-          sx={{ mt: 2 }}
-        >
-          Retry Connection
-        </Button>
-      </Container>
-    );
-  }
+  useEffect(() => {
+    fetchVerificationRequests();
+  }, []);
 
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4" gutterBottom>
-            Admin Dashboard - Verification Requests
-          </Typography>
-          <Typography variant="body1">
-            Connected Account: {account}
-          </Typography>
-        </Box>
+    <div className="min-h-screen bg-gray-950 text-white px-6 py-10">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold mb-8 text-center text-yellow-400">🛡️ Admin Dashboard - Verification Requests</h1>
 
-        <Box display="flex" justifyContent="space-between" mb={3}>
-          <TextField
-            label="Search by Wallet Address"
-            variant="outlined"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ width: '30%' }}
-          />
-          <FormControl sx={{ width: '20%' }}>
-            <InputLabel>Filter by Status</InputLabel>
-            <Select
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <div className="flex items-center gap-3">
+            <label htmlFor="statusFilter" className="text-lg font-semibold">Filter:</label>
+            <select
+              id="statusFilter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              label="Filter by Status"
+              onChange={handleFilterChange}
+              className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600"
             >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="approved">Approved</MenuItem>
-              <MenuItem value="rejected">Rejected</MenuItem>
-            </Select>
-          </FormControl>
-          <Button
-            variant="contained"
-            startIcon={<RefreshIcon />}
-            onClick={fetchRequests}
-            sx={{ height: 'fit-content' }}
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <button
+            onClick={fetchVerificationRequests}
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded shadow"
+            disabled={loading}
           >
-            Refresh
-          </Button>
-        </Box>
+            {loading ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+        </div>
 
-        {filteredRequests.length === 0 ? (
-          <Typography variant="body1" sx={{ textAlign: 'center', py: 4 }}>
-            No verification requests found.
-          </Typography>
-        ) : (
-          <Box sx={{ height: 400, width: '100%' }}>
-            <DataGrid
-              rows={filteredRequests}
-              columns={columns}
-              pageSize={rowsPerPage}
-              rowsPerPageOptions={[5, 10, 20]}
-              onPageSizeChange={(newPageSize) => setRowsPerPage(newPageSize)}
-              page={page}
-              onPageChange={(newPage) => setPage(newPage)}
-              pagination
-              disableSelectionOnClick
-            />
-          </Box>
+        {error && <p className="text-red-500 text-center">{error}</p>}
+        {!loading && filteredRequests.length === 0 && (
+          <p className="text-center text-gray-400">No verification requests found.</p>
         )}
-      </Paper>
-    </Container>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm bg-gray-800 rounded-lg shadow">
+            <thead className="bg-gray-700 text-gray-300">
+              <tr>
+                <th className="p-3 text-left">Wallet Address</th>
+                <th className="p-3 text-left">Role</th>
+                <th className="p-3 text-left">Status</th>
+                <th className="p-3 text-left">Requested At</th>
+                <th className="p-3 text-left">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRequests.map((r, idx) => (
+                <tr key={`${r.walletAddress}-${r.role}`} className="border-t border-gray-700 hover:bg-gray-700/40">
+                  <td className="p-3">{r.walletAddress}</td>
+                  <td className="p-3">{roleLabels[r.role] || r.role}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold 
+                      ${r.status === 'approved' ? 'bg-green-600' : r.status === 'pending' ? 'bg-yellow-500 text-black' : 'bg-red-500'}`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="p-3">{new Date(r.createdAt).toLocaleString()}</td>
+                  <td className="p-3">
+                    {r.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <button
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                          onClick={() => handleVerification(r.walletAddress, r.role, 'approved')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                          onClick={() => handleVerification(r.walletAddress, r.role, 'rejected')}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-sm text-center mt-8 text-gray-500">
+          Powered by <span className="text-yellow-400">MetaMask</span> & Blockchain Verification 🚀
+        </p>
+      </div>
+    </div>
   );
 };
 

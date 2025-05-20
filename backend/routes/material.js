@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Material = require('../models/Material');
+const { createMaterial, getMaterials, searchMaterials } = require('../controllers/materialController');
 
+router.get('/search', searchMaterials);
 router.post('/', async (req, res) => {
   const material = new Material(req.body);
   await material.save();
