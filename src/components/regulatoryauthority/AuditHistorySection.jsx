@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -12,26 +11,32 @@ import {
 } from '@mui/material';
 
 const AuditHistorySection = () => {
-  const auditData = [
-    {
-      id: 'AUD001',
-      entity: 'Airline AL123',
-      date: '2025-03-01',
-      outcome: 'Pass',
-      notes: 'No major issues found',
-    },
-    {
-      id: 'AUD002',
-      entity: 'MRO AeroCraft',
-      date: '2025-03-05',
-      outcome: 'Fail',
-      notes: 'Non-compliance with parts records',
-    },
-  ];
+  const [auditData, setAuditData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAudits = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/audits');
+        if (!response.ok) throw new Error('Failed to fetch audits');
+        const data = await response.json();
+        setAuditData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchAudits();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Audit ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -75,8 +80,8 @@ const AuditHistorySection = () => {
           <TableBody>
             {auditData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.auditId}
+                onClick={() => handleRowClick(row.auditId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -100,7 +105,7 @@ const AuditHistorySection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.auditId}
                 </TableCell>
                 <TableCell
                   sx={{

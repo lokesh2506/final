@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -11,26 +11,32 @@ import {
 } from '@mui/material';
 
 const BlockchainTransactionSection = () => {
-  const transactionData = [
-    {
-      id: 'TXN0x123ABC',
-      date: '2025-03-10',
-      entity: 'Airline AL123',
-      type: 'Certification Issued',
-      notes: 'Airworthiness Certification',
-    },
-    {
-      id: 'TXN0x123DEF',
-      date: '2025-03-12',
-      entity: 'MRO AeroCraft',
-      type: 'Inspection Report',
-      notes: 'Passed safety inspection',
-    },
-  ];
+  const [transactionData, setTransactionData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/blockchain-transactions');
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+        const data = await response.json();
+        setTransactionData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Transaction ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -74,8 +80,8 @@ const BlockchainTransactionSection = () => {
           <TableBody>
             {transactionData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.transactionId}
+                onClick={() => handleRowClick(row.transactionId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -99,7 +105,7 @@ const BlockchainTransactionSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.transactionId}
                 </TableCell>
                 <TableCell
                   sx={{

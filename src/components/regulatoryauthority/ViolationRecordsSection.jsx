@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -11,26 +11,32 @@ import {
 } from '@mui/material';
 
 const ViolationRecordsSection = () => {
-  const violationData = [
-    {
-      id: 'VIOL001',
-      entity: 'Airline AL123',
-      type: 'Safety',
-      description: 'Failed to conduct engine checks',
-      date: '2025-03-10',
-    },
-    {
-      id: 'VIOL002',
-      entity: 'MRO AeroCraft',
-      type: 'Documentation',
-      description: 'Missing certification for parts',
-      date: '2025-03-12',
-    },
-  ];
+  const [violationData, setViolationData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchViolations = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/violations');
+        if (!response.ok) throw new Error('Failed to fetch violations');
+        const data = await response.json();
+        setViolationData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchViolations();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Violation ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -74,8 +80,8 @@ const ViolationRecordsSection = () => {
           <TableBody>
             {violationData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.violationId}
+                onClick={() => handleRowClick(row.violationId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -99,7 +105,7 @@ const ViolationRecordsSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.violationId}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -147,7 +153,7 @@ const ViolationRecordsSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.date}
+                  {row.dateReported}
                 </TableCell>
               </TableRow>
             ))}

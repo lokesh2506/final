@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -11,26 +11,32 @@ import {
 } from '@mui/material';
 
 const RegulationsStandardsSection = () => {
-  const regulationsData = [
-    {
-      id: 'REG001',
-      title: 'Aircraft Safety',
-      description: 'Defines safety measures for aircraft operation',
-      status: 'Active',
-      lastUpdate: '2025-02-01',
-    },
-    {
-      id: 'REG002',
-      title: 'Maintenance Standards',
-      description: 'Establishes standards for maintenance operations',
-      status: 'Active',
-      lastUpdate: '2025-03-01',
-    },
-  ];
+  const [regulationsData, setRegulationsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRegulations = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/regulations');
+        if (!response.ok) throw new Error('Failed to fetch regulations');
+        const data = await response.json();
+        setRegulationsData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchRegulations();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Regulation ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -74,8 +80,8 @@ const RegulationsStandardsSection = () => {
           <TableBody>
             {regulationsData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.regulationId}
+                onClick={() => handleRowClick(row.regulationId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -99,7 +105,7 @@ const RegulationsStandardsSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.regulationId}
                 </TableCell>
                 <TableCell
                   sx={{

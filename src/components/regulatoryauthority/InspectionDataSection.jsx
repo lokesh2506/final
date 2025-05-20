@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -11,26 +11,32 @@ import {
 } from '@mui/material';
 
 const InspectionDataSection = () => {
-  const inspectionData = [
-    {
-      id: 'INS001',
-      entity: 'Airline AL123',
-      date: '2025-03-10',
-      outcome: 'Compliant',
-      nextInspection: '2025-09-10',
-    },
-    {
-      id: 'INS002',
-      entity: 'MRO AeroCraft',
-      date: '2025-03-12',
-      outcome: 'Non-Compliant',
-      nextInspection: '2025-04-01',
-    },
-  ];
+  const [inspectionData, setInspectionData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchInspections = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/inspections');
+        if (!response.ok) throw new Error('Failed to fetch inspections');
+        const data = await response.json();
+        setInspectionData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchInspections();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Inspection ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -74,8 +80,8 @@ const InspectionDataSection = () => {
           <TableBody>
             {inspectionData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.inspectionId}
+                onClick={() => handleRowClick(row.inspectionId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -99,7 +105,7 @@ const InspectionDataSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.inspectionId}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -147,7 +153,7 @@ const InspectionDataSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.nextInspection}
+                  {row.nextInspectionDate}
                 </TableCell>
               </TableRow>
             ))}

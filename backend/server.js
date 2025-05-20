@@ -5,6 +5,14 @@ require('dotenv').config();
 
 const app = express();
 
+// Middleware
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(express.json());
+
 // ROUTES
 const verificationRoutes = require('./routes/verification');
 const materialRoutes = require('./routes/material');
@@ -15,13 +23,7 @@ const supplierRoutes = require('./routes/supplierRoutes');
 const manufacturerRoutes = require('./routes/manufacturerRoutes'); // ✅ Newly added
 const VerificationRequest = require('./models/VerificationRequest');
 
-// Middleware
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(express.json());
+
 
 // Mount routes
 app.use('/api/verification', verificationRoutes);
@@ -31,6 +33,25 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/manufacturer', manufacturerRoutes); // ✅ Added here
+
+
+const complianceRoutes = require('./routes/complianceRoutes');
+const regulationRoutes = require('./routes/regulationRoutes');
+const inspectionRoutes = require('./routes/inspectionRoutes');
+const violationRoutes = require('./routes/violationRoutes');
+const certificationRoutes = require('./routes/certificationRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const blockchainTransactionRoutes = require('./routes/blockchainTransactionRoutes');
+const metricRoutes = require('./routes/metricRoutes');
+
+app.use('/api/compliance', complianceRoutes);
+app.use('/api/regulations', regulationRoutes);
+app.use('/api/inspections', inspectionRoutes);
+app.use('/api/violations', violationRoutes);
+app.use('/api/certifications', certificationRoutes);
+app.use('/api/audits', auditRoutes);
+app.use('/api/blockchain-transactions', blockchainTransactionRoutes);
+app.use('/api/metrics', metricRoutes);
 
 // Verified users route
 app.get('/api/verification/verified', async (req, res) => {

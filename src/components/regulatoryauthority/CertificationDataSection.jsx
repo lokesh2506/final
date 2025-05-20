@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -11,26 +11,32 @@ import {
 } from '@mui/material';
 
 const CertificationDataSection = () => {
-  const certificationData = [
-    {
-      id: 'CERT001',
-      type: 'Aircraft Certification',
-      entity: 'Airline AL123',
-      date: '2025-01-01',
-      expiry: '2026-01-01',
-    },
-    {
-      id: 'CERT002',
-      type: 'Parts Certification',
-      entity: 'MRO AeroCraft',
-      date: '2025-02-01',
-      expiry: '2026-02-01',
-    },
-  ];
+  const [certificationData, setCertificationData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCertifications = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/certifications');
+        if (!response.ok) throw new Error('Failed to fetch certifications');
+        const data = await response.json();
+        setCertificationData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchCertifications();
+  }, []);
 
   const handleRowClick = (id) => {
     console.log(`Clicked Certification ID: ${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -74,8 +80,8 @@ const CertificationDataSection = () => {
           <TableBody>
             {certificationData.map((row, index) => (
               <TableRow
-                key={row.id}
-                onClick={() => handleRowClick(row.id)}
+                key={row.certificationId}
+                onClick={() => handleRowClick(row.certificationId)}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -99,7 +105,7 @@ const CertificationDataSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.certificationId}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -147,7 +153,7 @@ const CertificationDataSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.expiry}
+                  {row.expiryDate}
                 </TableCell>
               </TableRow>
             ))}

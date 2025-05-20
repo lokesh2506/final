@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
+
 const inspectionSchema = new mongoose.Schema({
-  inspectorWallet: String,
-  entityWallet: String,
-  findings: String,
-  result: String,
-  date: Date,
+  inspectionId: { type: String, required: true, unique: true },
+  entity: String,
+  date: String,
+  outcome: String,
+  nextInspectionDate: String,
 });
 
-module.exports = mongoose.model('Inspection', inspectionSchema);s
+module.exports = mongoose.model('Inspection', inspectionSchema);

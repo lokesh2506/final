@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,27 +14,33 @@ import {
 
 const EntityComplianceSection = () => {
   const navigate = useNavigate();
-  const complianceData = [
-    {
-      id: 'ENT001',
-      type: 'Airline',
-      complianceStatus: 'Compliant',
-      certificationStatus: 'Certified',
-      lastInspection: '2025-03-15',
-    },
-    {
-      id: 'ENT002',
-      type: 'MRO',
-      complianceStatus: 'Non-Compliant',
-      certificationStatus: 'Pending Certification',
-      lastInspection: '2025-03-20',
-    },
-  ];
+  const [complianceData, setComplianceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCompliance = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/compliance');
+        if (!response.ok) throw new Error('Failed to fetch compliance data');
+        const data = await response.json();
+        setComplianceData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchCompliance();
+  }, []);
 
   const handleViewDetails = (id) => {
     console.log(`View Details for Entity ID: ${id}`);
     navigate(`/entity-details/${id}`);
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
@@ -79,7 +85,7 @@ const EntityComplianceSection = () => {
           <TableBody>
             {complianceData.map((row, index) => (
               <TableRow
-                key={row.id}
+                key={row.entityId}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -103,7 +109,7 @@ const EntityComplianceSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.id}
+                  {row.entityId}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -115,7 +121,7 @@ const EntityComplianceSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.type}
+                  {row.entityType}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -151,7 +157,7 @@ const EntityComplianceSection = () => {
                     borderColor: 'grey.200',
                   }}
                 >
-                  {row.lastInspection}
+                  {row.lastInspectionDate}
                 </TableCell>
                 <TableCell
                   sx={{
@@ -166,7 +172,7 @@ const EntityComplianceSection = () => {
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => handleViewDetails(row.id)}
+                    onClick={() => handleViewDetails(row.entityId)}
                   >
                     View Details
                   </Button>
