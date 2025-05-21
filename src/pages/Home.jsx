@@ -9,9 +9,7 @@ import { toast } from 'react-toastify';
 const roles = [
   'Supplier',
   'Manufacturer',
-  'MRO',
-  'Airline',
-  'Regulatory Authority',
+  'MRO'
 ];
 
 const Home = () => {
