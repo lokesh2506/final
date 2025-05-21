@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 
 const PartSchema = new mongoose.Schema({
-  manufacturerWallet: String,
   partName: String,
-  serialNumber: String,
+  serialBatch: String,
+  materialUsed: String,
   status: String,
-  manufacturingDate: String,
+  manufactureDate: String,
   deliveryDate: String,
+  createdBy: String,
 });
 
 module.exports = mongoose.model('Part', PartSchema);

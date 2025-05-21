@@ -8,6 +8,7 @@ import ManufacturerABI from '../abis/Manufacturer.json';
 import MROABI from '../abis/MRO.json';
 import AirlineABI from '../abis/Airline.json';
 import RegulatoryABI from '../abis/RegulatoryAuthority.json';
+import PartProductionABI from '../abis/PartProduction.json'; // ✅ NEW ABI import
 
 export const BlockchainContext = createContext();
 
@@ -39,6 +40,7 @@ export const BlockchainProvider = ({ children }) => {
           mro: MROABI.networks?.[chainId]?.address,
           airline: AirlineABI.networks?.[chainId]?.address,
           regulatory: RegulatoryABI.networks?.[chainId]?.address,
+          partProduction: PartProductionABI.networks?.[chainId]?.address,
         };
 
         // Abort if any contract is missing
@@ -54,6 +56,7 @@ export const BlockchainProvider = ({ children }) => {
           mro: new ethers.Contract(addresses.mro, MROABI.abi, signer),
           airline: new ethers.Contract(addresses.airline, AirlineABI.abi, signer),
           regulatory: new ethers.Contract(addresses.regulatory, RegulatoryABI.abi, signer),
+          partProduction: new ethers.Contract(addresses.partProduction, PartProductionABI.abi, signer), 
         };
 
         setContracts(instances);
@@ -86,6 +89,23 @@ export const BlockchainProvider = ({ children }) => {
       }
     }
   };
+  const producePart = async (details) => {
+    try {
+      const tx = await contracts.partProduction.producePart(
+        details.partName,
+        details.serialBatch,
+        details.materialUsed,
+        account,
+        details.status,
+        details.manufactureDate,
+        details.deliveryDate
+      );
+      await tx.wait();
+      console.log("✅ Part produced:", tx.hash);
+    } catch (err) {
+      console.error("❌ Error producing part:", err);
+    }
+  };
 
   return (
     <BlockchainContext.Provider
@@ -102,6 +122,7 @@ export const BlockchainProvider = ({ children }) => {
         setRole,
         setIsVerified,
         setIsLoggedIn,
+        producePart, // ✅ Export function
       }}
     >
       {children}

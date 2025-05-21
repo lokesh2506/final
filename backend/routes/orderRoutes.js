@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-
+const Delivery = require('../models/Delivery'); 
 router.post('/create', async (req, res) => {
   const {
     materialName,
     quantity,
     supplier,
     manufacturer,
-    totalPrice,
+    totalPrice, 
     contractOrderId
   } = req.body;
 
@@ -56,5 +56,17 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to update order' });
   }
 });
+router.get('/manufacturer/:wallet', async (req, res) => {
+  try {
+    const orders = await Order.find({ manufacturer: req.params.wallet.toLowerCase() });
+    res.json(orders);
+  } catch (err) {
+    console.error('❌ Failed to fetch manufacturer orders:', err);
+    res.status(500).json({ error: 'Failed to load manufacturer orders' });
+  }
+});
+
+
+
 
 module.exports = router;

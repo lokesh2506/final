@@ -1,155 +1,101 @@
-import React from 'react';
-import {
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  Chip,
-} from '@mui/material';
+import React, { useState, useEffect, useContext } from 'react';
+import { BlockchainContext } from '../../context/BlockchainContext';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
-const MaterialInventorySection = () => {
-  const materials = [
-    { materialName: 'Titanium Alloy', supplier: 'AlloyForge Inc.', qtyReceived: '1500 kg', qtyUsed: '600 kg', condition: 'Good' },
-    { materialName: 'Carbon Fiber', supplier: 'NanoFiber Co.', qtyReceived: '800 kg', qtyUsed: '500 kg', condition: 'Good' },
-    { materialName: 'Aluminum Sheet', supplier: 'SheetMakers Ltd.', qtyReceived: '1200 kg', qtyUsed: '0 kg', condition: 'Needs Recheck' },
-  ];
+const SuppliedMaterialInventory = () => {
+  const { account } = useContext(BlockchainContext);
+  const [deliveries, setDeliveries] = useState([]);
+
+  const getTodayDate = () =>
+    new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const fetchDeliveries = async () => {
+    try {
+      if (!account) return;
+
+      const res = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/delivery/manufacturer/${account}`
+      );
+
+      const enriched = res.data.map((delivery) => ({
+        ...delivery,
+        deliveryDate: delivery.deliveryDate
+          ? new Date(delivery.deliveryDate).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : getTodayDate(),
+        certified: '✅ Yes',
+      }));
+
+      setDeliveries(enriched);
+    } catch (error) {
+      console.error('Error fetching deliveries:', error);
+      toast.error('❌ Failed to load supplied inventory');
+    }
+  };
+
+  useEffect(() => {
+    fetchDeliveries();
+  }, [account]);
 
   return (
-    <Box sx={{ py: 8, px: { xs: 2, sm: 4 }, }}>
-      
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: '16px',
-          boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.12)',
-          overflow: 'hidden',
-          maxWidth: '100%',
-          '&:hover': {
-            boxShadow: '0px 12px 40px rgba(0, 0, 0, 0.15)',
-            transition: 'box-shadow 0.3s ease-in-out',
-          },
-        }}
-      >
-        <Table sx={{ minWidth: 800 }} aria-label="material inventory table">
-          <TableHead className='border-b-2'>
-            <TableRow
-              sx={{
-                bgcolor: 'linear-gradient(90deg, #1e88e5 0%, #42a5f5 100%)',
-                '& th': {
-                  color: 'grey.700',
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold',
-                  py: 3,
-                  px: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05rem',
-                  borderBottom: 'none',
-                },
-              }}
-            >
-              <TableCell>Material Name</TableCell>
-              <TableCell>Supplier Name</TableCell>
-              <TableCell>Qty Received</TableCell>
-              <TableCell>Qty Used</TableCell>
-              <TableCell>Condition</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {materials.map((material, index) => (
-              <TableRow
-                key={material.materialName}
-                sx={{
-                  bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
-                  '&:hover': {
-                    bgcolor: 'linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%)',
-                    transition: 'background 0.3s ease-in-out',
-                  },
-                  cursor: 'pointer',
-                  '&:active': {
-                    transform: 'scale(0.99)',
-                    transition: 'transform 0.1s ease',
-                  },
-                }}
-              >
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
+    <div className="min-h-screen bg-gradient-to-r from-indigo-100 to-blue-50 py-10 px-4">
+      <h2 className="text-center text-4xl font-extrabold mb-10 text-indigo-900 tracking-wide">
+        🚚 Supplied Material Inventory
+      </h2>
+
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+            <tr>
+              <th className="px-6 py-4 text-left font-semibold tracking-wide">Material</th>
+              <th className="px-6 py-4 text-left font-semibold tracking-wide">Quantity</th>
+              <th className="px-6 py-4 text-left font-semibold tracking-wide">Supplier</th>
+              <th className="px-6 py-4 text-left font-semibold tracking-wide">Delivered On</th>
+              <th className="px-6 py-4 text-left font-semibold tracking-wide">Certified</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {deliveries.length > 0 ? (
+              deliveries.map((item, index) => (
+                <tr
+                  key={index}
+                  className="hover:bg-indigo-50 transition duration-200 text-slate-700"
                 >
-                  {material.materialName}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {material.supplier}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {material.qtyReceived}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {material.qtyUsed}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  <Chip
-                    label={material.condition}
-                    size="small"
-                    sx={{
-                      bgcolor: material.condition === 'Good' ? '#e8f5e9' : '#fffde7',
-                      color: material.condition === 'Good' ? '#2e7d32' : '#f9a825',
-                      fontWeight: 'medium',
-                    }}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+                  <td className="px-6 py-3 font-medium">{item.materialName}</td>
+                  <td className="px-6 py-3">{item.quantity} kg</td>
+                  <td className="px-6 py-3">
+                    <span className="text-slate-800 font-mono">
+                      {item.supplier?.slice(0, 6)}...{item.supplier?.slice(-4)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3">{item.deliveryDate}</td>
+                  <td className="px-6 py-3">
+                    <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                      {item.certified}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="px-6 py-6 text-center text-gray-400 italic">
+                  No supplied inventory found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
-export default MaterialInventorySection;
+export default SuppliedMaterialInventory;

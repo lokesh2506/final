@@ -7,7 +7,7 @@ const MRO = artifacts.require("MRO");
 const Airline = artifacts.require("Airline");
 const RegulatoryAuthority = artifacts.require("RegulatoryAuthority");
 const Utils = artifacts.require("Utils");
-
+const PartProduction = artifacts.require("PartProduction");
 module.exports = async function (deployer) {
   console.log("🚀 Deploying Admin...");
   await deployer.deploy(Admin);
@@ -16,7 +16,7 @@ module.exports = async function (deployer) {
   console.log("📦 Deploying Transaction...");
   await deployer.deploy(Transaction);
   const transaction = await Transaction.deployed();
-
+  deployer.deploy(PartProduction);
   console.log("💰 Deploying Fine...");
   await deployer.deploy(Fine);
   const fine = await Fine.deployed();

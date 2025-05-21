@@ -24,6 +24,7 @@ app.use(cors({
 app.use(express.json());
 
 // Mount routes
+app.use('/api/parts', require('./routes/partRoutes'));
 app.use('/api/verification', verificationRoutes);
 app.use('/api/material', materialRoutes);
 app.use('/api/order', orderRoutes);
