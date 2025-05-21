@@ -1,79 +1,116 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Grid, IconButton } from '@mui/material';
 import { FaCogs, FaBoxOpen, FaCheckCircle, FaFileInvoice } from 'react-icons/fa';
 
 const HomeSection = () => {
-  const metrics = [
+  const [metrics, setMetrics] = useState({
+    totalOngoingOrders: 0,
+    totalAvailableParts: 0,
+    totalCompletedOrders: 0,
+    totalTransactions: 0,
+  });
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/dashboard/metrics');
+        if (!response.ok) throw new Error('Failed to fetch metrics');
+        const data = await response.json();
+        setMetrics(data);
+      } catch (err) {
+        console.error('Error fetching metrics:', err);
+      }
+    };
+    fetchMetrics();
+  }, []);
+
+  const metricsData = [
     {
       metric: 'Total Ongoing Orders',
-      value: '3',
+      value: metrics.totalOngoingOrders,
       unit: 'orders',
       icon: <FaCogs className="w-6 h-6 text-blue-600" />,
-      bgColor: 'blue-50',
-      iconBgColor: 'blue-100',
+      bgColor: '#e3f2fd',
+      iconBgColor: '#bbdefb',
     },
     {
       metric: 'Total Available Parts',
-      value: '3',
+      value: metrics.totalAvailableParts,
       unit: 'parts',
       icon: <FaBoxOpen className="w-6 h-6 text-purple-600" />,
-      bgColor: 'purple-50',
-      iconBgColor: 'purple-100',
+      bgColor: '#f3e5f5',
+      iconBgColor: '#e1bee7',
     },
     {
       metric: 'Total Completed Orders',
-      value: '5',
+      value: metrics.totalCompletedOrders,
       unit: 'orders',
       icon: <FaCheckCircle className="w-6 h-6 text-green-600" />,
-      bgColor: 'green-50',
-      iconBgColor: 'green-100',
+      bgColor: '#e8f5e9',
+      iconBgColor: '#c8e6c9',
     },
     {
       metric: 'Total Transactions',
-      value: '10',
+      value: metrics.totalTransactions,
       unit: 'transactions',
       icon: <FaFileInvoice className="w-6 h-6 text-orange-600" />,
-      bgColor: 'orange-50',
-      iconBgColor: 'orange-100',
+      bgColor: '#fff3e0',
+      iconBgColor: '#ffcc80',
     },
   ];
 
   return (
-    <div className="home-section py-12">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col gap-6">
-          {Array.from({ length: Math.ceil(metrics.length / 2) }, (_, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-6">
-              {metrics.slice(rowIndex * 2, (rowIndex + 1) * 2).map((item, index) => (
-                <div
-                  key={index}
-                  className={`relative bg-${item.bgColor} p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200/50 w-[calc(50%-0.75rem)] min-w-[300px]`}
+    <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
+
+      <Grid container spacing={3} justifyContent="center">
+        {metricsData.map((item, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Card
+              sx={{
+                bgcolor: item.bgColor,
+                borderRadius: '16px',
+                boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.12)',
+                '&:hover': {
+                  boxShadow: '0px 12px 40px rgba(0, 0, 0, 0.15)',
+                  transform: 'translateY(-4px)',
+                  transition: 'all 0.3s ease-in-out',
+                },
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 3 }}>
+                <Box
+                  sx={{
+                    bgcolor: item.iconBgColor,
+                    borderRadius: '50%',
+                    width: 48,
+                    height: 48,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 bg-${item.iconBgColor} rounded-full flex items-center justify-center`}>
-                      {item.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                        {item.metric}
-                      </h3>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-extrabold text-gray-900">{item.value}</p>
-                        <span className="text-sm text-gray-500">{item.unit}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {/* Add an empty div to maintain layout if the row has only one card */}
-              {metrics.slice(rowIndex * 2, (rowIndex + 1) * 2).length === 1 && (
-                <div className="w-[calc(50%-0.75rem)] min-w-[300px]"></div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+                  {item.icon}
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'grey.800', mb: 1 }}>
+                    {item.metric}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 'extrabold', color: 'grey.900' }}>
+                      {item.value}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'grey.500' }}>
+                      {item.unit}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
 };
 

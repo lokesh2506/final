@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button, Typography } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button, Typography, Modal, IconButton } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
 const RequestPartsSection = () => {
   const [partRequests, setPartRequests] = useState([]);
@@ -10,11 +11,13 @@ const RequestPartsSection = () => {
     requiredBy: '',
   });
   const [error, setError] = useState('');
+  const [open, setOpen] = useState(false); // State for modal open/close
 
   useEffect(() => {
     const fetchPartRequests = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/part-requests');
+        if (!response.ok) throw new Error('Failed to fetch part requests');
         const data = await response.json();
         setPartRequests(data);
       } catch (err) {
@@ -45,61 +48,110 @@ const RequestPartsSection = () => {
       setPartRequests([...partRequests, newRequest]);
       setFormData({ requestId: '', partName: '', quantity: '', requiredBy: '' });
       setError('');
+      setOpen(false); // Close modal on successful submission
     } catch (err) {
       setError(err.message);
     }
   };
 
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    setError(''); // Clear error when closing modal
+  };
+
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
-      <Typography variant="h5" gutterBottom>
-        Request New Part
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
-        <TextField
-          label="Request ID"
-          name="requestId"
-          value={formData.requestId}
-          onChange={handleInputChange}
-          required
-          sx={{ m: 1, width: '25ch' }}
-        />
-        <TextField
-          label="Part Name"
-          name="partName"
-          value={formData.partName}
-          onChange={handleInputChange}
-          required
-          sx={{ m: 1, width: '25ch' }}
-        />
-        <TextField
-          label="Quantity"
-          name="quantity"
-          type="number"
-          value={formData.quantity}
-          onChange={handleInputChange}
-          required
-          sx={{ m: 1, width: '25ch' }}
-        />
-        <TextField
-          label="Required By"
-          name="requiredBy"
-          type="date"
-          value={formData.requiredBy}
-          onChange={handleInputChange}
-          required
-          sx={{ m: 1, width: '25ch' }}
-          InputLabelProps={{ shrink: true }}
-        />
-        <Button type="submit" variant="contained" sx={{ m: 1 }}>
-          Submit Request
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleOpen}
+          sx={{ bgcolor: '#1e88e5', '&:hover': { bgcolor: '#1565c0' } }}
+        >
+          Request New Part
         </Button>
-        {error && (
-          <Typography color="error" sx={{ mt: 1 }}>
-            {error}
-          </Typography>
-        )}
       </Box>
+
+      {/* Modal for the form */}
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="request-part-modal"
+        aria-describedby="request-part-form"
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: 400 },
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: '8px',
+            outline: 'none',
+          }}
+        >
+          <Typography id="request-part-modal" variant="h6" gutterBottom>
+            Request New Part
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Request ID"
+              name="requestId"
+              value={formData.requestId}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Part Name"
+              name="partName"
+              value={formData.partName}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Quantity"
+              name="quantity"
+              type="number"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Required By"
+              name="requiredBy"
+              type="date"
+              value={formData.requiredBy}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Button onClick={handleClose} variant="outlined">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained">
+                Submit Request
+              </Button>
+            </Box>
+            {error && (
+              <Typography color="error" sx={{ mt: 1 }}>
+                {error}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* Table for displaying part requests */}
       <TableContainer
         component={Paper}
         sx={{

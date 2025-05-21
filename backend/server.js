@@ -38,6 +38,7 @@ app.use('/api/service-orders', require('./routes/serviceOrderRoutes'));
 app.use('/api/part-requests', require('./routes/partRequestRoutes'));
 app.use('/api/mrotransactions', require('./routes/mroTransactionRoutes'));
 app.use('/api/audits', require('./routes/auditRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes')); 
 
 // Verified users route
 app.get('/api/verification/verified', async (req, res) => {

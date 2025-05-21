@@ -7,7 +7,8 @@ const TransactionsSection = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/mrotransactions');
+        const response = await fetch('http://localhost:5000/api/transactions'); // Fixed URL
+        if (!response.ok) throw new Error('Failed to fetch transactions');
         const data = await response.json();
         setTransactions(data);
       } catch (err) {

@@ -1,26 +1,50 @@
-import React from 'react';
-import {
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
 
-const TransactionHistorySection = () => {
-  const transactions = [
-    { id: 'TXN0x01f239ab', date: '2025-04-10', actionType: 'Part Created', from: 'AeroCraft Industries', to: '—', partMaterial: 'Jet Engine Core' },
-    { id: 'TXN0x01f23b5f', date: '2025-04-08', actionType: 'Material Received', from: 'AlloyForge Inc.', to: 'AeroCraft Industries', partMaterial: 'Titanium Alloy' },
-    { id: 'TXN0x01f24ab3', date: '2025-04-11', actionType: 'Part Shipped', from: 'AeroCraft Industries', to: 'SkyTech MRO', partMaterial: 'Jet Engine Core' },
-  ];
+const TransactionsSection = () => {
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/transactions'); // Fixed URL
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+        const data = await response.json();
+        setTransactions(data);
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+  const handleVerify = async (txnId) => {
+    try {
+      const audit = {
+        auditId: `AUD-${Date.now()}`,
+        entity: 'Transaction',
+        audited: txnId,
+        date: new Date().toISOString().split('T')[0],
+        outcome: 'Verified',
+        notes: `Transaction ${txnId} verified`,
+      };
+      const response = await fetch('http://localhost:5000/api/audits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audit),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create audit record');
+      }
+      alert(`Transaction ${txnId} verified and audit record created`);
+    } catch (err) {
+      console.error('Error verifying transaction:', err);
+      alert('Failed to verify transaction');
+    }
+  };
 
   return (
-    <Box sx={{ py: 8, px: { xs: 2, sm: 4 }, }}>
-     
+    <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
       <TableContainer
         component={Paper}
         sx={{
@@ -34,8 +58,8 @@ const TransactionHistorySection = () => {
           },
         }}
       >
-        <Table sx={{ minWidth: 800 }} aria-label="blockchain transaction history table">
-          <TableHead className='border-b-2'>
+        <Table sx={{ minWidth: 800 }} aria-label="transactions table">
+          <TableHead className="border-b-2">
             <TableRow
               sx={{
                 bgcolor: 'linear-gradient(90deg, #1e88e5 0%, #42a5f5 100%)',
@@ -51,18 +75,18 @@ const TransactionHistorySection = () => {
                 },
               }}
             >
-              <TableCell>Transaction ID</TableCell>
+              <TableCell>ID</TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>Action Type</TableCell>
-              <TableCell>From</TableCell>
-              <TableCell>To</TableCell>
-              <TableCell>Part/Material</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell>Part Name</TableCell>
+              <TableCell>Notes</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {transactions.map((transaction, index) => (
+            {transactions.map((txn, index) => (
               <TableRow
-                key={transaction.id}
+                key={txn.txnId}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -76,77 +100,23 @@ const TransactionHistorySection = () => {
                   },
                 }}
               >
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.id}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  {txn.txnId}
                 </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.date}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  {txn.date}
                 </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.actionType}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  {txn.action}
                 </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.from}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  {txn.partName}
                 </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.to}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  {txn.notes}
                 </TableCell>
-                <TableCell
-                  sx={{
-                    fontSize: '1.1rem',
-                    color: 'grey.900',
-                    py: 2.5,
-                    px: 4,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
-                  }}
-                >
-                  {transaction.partMaterial}
+                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                  <Button onClick={() => handleVerify(txn.txnId)}>Verify</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -157,4 +127,4 @@ const TransactionHistorySection = () => {
   );
 };
 
-export default TransactionHistorySection;
+export default TransactionsSection;

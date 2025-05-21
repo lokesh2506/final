@@ -3,12 +3,14 @@ import Sidebar from '../ReusableComponent/Sidebar';
 import ServiceOrdersSection from '../mro/ServiceOrdersSection';
 import RequestPartsSection from '../mro/RequestPartsSection';
 import TransactionsSection from '../mro/TransactionsSection';
+import HomeSection from "../mro/HomeSection"
 
 const MRODashboard = () => {
   const [activeSection, setActiveSection] = useState('Home');
 
   // Menu items for sidebar
   const menuItems = [
+    { key: 'Home', label: 'Home' },
     { key: 'ServiceOrders', label: 'Service Orders' },
     { key: 'RequestParts', label: 'Request Parts' },
     { key: 'Transactions', label: 'Transactions' },
@@ -32,6 +34,7 @@ const MRODashboard = () => {
         <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">
           MRO DASHBOARD
         </h1>
+        {activeSection === 'Home' && <HomeSection/>}
         {activeSection === 'ServiceOrders' && (
           <ServiceOrdersSection setActiveSection={setActiveSection} />
         )}
