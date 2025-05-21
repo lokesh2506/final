@@ -50,16 +50,20 @@ router.get('/orders/:wallet', async (req, res) => {
   }
 });
 
-// ✅ Get deliveries for a supplier
 router.get('/deliveries/:wallet', async (req, res) => {
   try {
-    const deliveries = await Delivery.find({ supplierWallet: req.params.wallet.toLowerCase() });
+    const deliveries = await Order.find({
+      supplier: req.params.wallet.toLowerCase(),
+      status: 'supplied'
+    }).sort({ createdAt: -1 });
+
     res.json(deliveries);
   } catch (err) {
-    console.error('❌ Failed to load deliveries:', err);
-    res.status(500).json({ error: 'Failed to load deliveries' });
+    console.error('Error fetching deliveries:', err);
+    res.status(500).json({ error: 'Failed to fetch deliveries' });
   }
 });
+
 
 // ✅ Add new material (Blockchain + MongoDB + Transaction)
 router.post('/addMaterial', async (req, res) => {

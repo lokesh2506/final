@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../ReusableComponent/Sidebar';
 import HomeSection from '../manufacturer/HomeSection';
-import OrdersSection from '../manufacturer/OrdersSection';
 import MaterialInventorySection from '../manufacturer/MaterialInventorySection';
 import MaterialOrdersSection from '../manufacturer/MaterialOrdersSection';
 import PartsProductionSection from '../manufacturer/PartsProductionSection';
@@ -36,12 +35,9 @@ const ManufacturerDashboard = () => {
 
   const menuItems = [
     { key: 'home', label: 'Home' },
-    { key: 'orders', label: 'MRO Orders' },
     { key: 'materialInventory', label: 'Material Inventory' },
     { key: 'materialOrders', label: 'Material Orders' },
     { key: 'partsProduction', label: 'Parts Production' },
-    { key: 'qualityAssurance', label: 'Quality Assurance' },
-    { key: 'shipmentManagement', label: 'Shipment Management' },
     { key: 'TranscationHistory', label: 'Transaction History' },
   ];
 
@@ -54,12 +50,9 @@ const ManufacturerDashboard = () => {
         </div>
 
         {activeSection === 'home' && <HomeSection stats={dashboardData} />}
-        {activeSection === 'orders' && <OrdersSection />}
         {activeSection === 'materialInventory' && <MaterialInventorySection />}
         {activeSection === 'materialOrders' && <MaterialOrdersSection />}
         {activeSection === 'partsProduction' && <PartsProductionSection />}
-        {activeSection === 'qualityAssurance' && <QualityAssuranceSection />}
-        {activeSection === 'shipmentManagement' && <ShipmentManagementSection />}
         {activeSection === 'TranscationHistory' && <TransactionHistorySection />}
       </div>
     </div>
