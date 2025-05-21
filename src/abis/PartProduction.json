@@ -8316,12 +8316,12 @@
     "1337": {
       "events": {},
       "links": {},
-      "address": "0x4F985834196be1750CBc3A8f38f98f7D4d59974e",
-      "transactionHash": "0x4a3bccb68770e72c898a69e1bb267e06d3686ae8d9c7efa84afd1ab2f0fcd791"
+      "address": "0x5924E9ED2Ff05eb3457C0e01994AF1223eeb63bA",
+      "transactionHash": "0x9857d0939f11b761a882f85bdc96d788188ebc4daaf48822ee8efb216f0783e4"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-05-21T02:42:34.835Z",
+  "updatedAt": "2025-05-21T03:59:27.072Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
