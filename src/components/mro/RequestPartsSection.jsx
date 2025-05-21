@@ -1,14 +1,105 @@
-import React from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-
-const partRequestsData = [
-  { id: 'PR-2025-01', partName: 'Jet Engine Core', quantity: 2, requiredBy: '2025-04-15', status: 'Requested' },
-  { id: 'PR-2025-02', partName: 'Brake Discs', quantity: 4, requiredBy: '2025-04-18', status: 'In Process' },
-];
+import React, { useState, useEffect } from 'react';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button, Typography } from '@mui/material';
 
 const RequestPartsSection = () => {
+  const [partRequests, setPartRequests] = useState([]);
+  const [formData, setFormData] = useState({
+    requestId: '',
+    partName: '',
+    quantity: '',
+    requiredBy: '',
+  });
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchPartRequests = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/part-requests');
+        const data = await response.json();
+        setPartRequests(data);
+      } catch (err) {
+        console.error('Error fetching part requests:', err);
+      }
+    };
+    fetchPartRequests();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5000/api/part-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit request');
+      }
+      const newRequest = await response.json();
+      setPartRequests([...partRequests, newRequest]);
+      setFormData({ requestId: '', partName: '', quantity: '', requiredBy: '' });
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
+      <Typography variant="h5" gutterBottom>
+        Request New Part
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
+        <TextField
+          label="Request ID"
+          name="requestId"
+          value={formData.requestId}
+          onChange={handleInputChange}
+          required
+          sx={{ m: 1, width: '25ch' }}
+        />
+        <TextField
+          label="Part Name"
+          name="partName"
+          value={formData.partName}
+          onChange={handleInputChange}
+          required
+          sx={{ m: 1, width: '25ch' }}
+        />
+        <TextField
+          label="Quantity"
+          name="quantity"
+          type="number"
+          value={formData.quantity}
+          onChange={handleInputChange}
+          required
+          sx={{ m: 1, width: '25ch' }}
+        />
+        <TextField
+          label="Required By"
+          name="requiredBy"
+          type="date"
+          value={formData.requiredBy}
+          onChange={handleInputChange}
+          required
+          sx={{ m: 1, width: '25ch' }}
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button type="submit" variant="contained" sx={{ m: 1 }}>
+          Submit Request
+        </Button>
+        {error && (
+          <Typography color="error" sx={{ mt: 1 }}>
+            {error}
+          </Typography>
+        )}
+      </Box>
       <TableContainer
         component={Paper}
         sx={{
@@ -47,9 +138,9 @@ const RequestPartsSection = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {partRequestsData.map((request, index) => (
+            {partRequests.map((request, index) => (
               <TableRow
-                key={request.id}
+                key={request.requestId}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -64,7 +155,7 @@ const RequestPartsSection = () => {
                 }}
               >
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-                  {request.id}
+                  {request.requestId}
                 </TableCell>
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
                   {request.partName}

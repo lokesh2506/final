@@ -1,13 +1,22 @@
-import React from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
-
-const serviceOrdersData = [
-  { id: 'WO-2025-003', partName: 'Jet Engine Core', serviceType: 'Overhaul', estimatedDelivery: '2025-04-10 to 2025-04-15' },
-  { id: 'WO-2025-004', partName: 'Landing Gear', serviceType: 'Inspection', estimatedDelivery: '2025-04-08 to 2025-04-11' },
-  { id: 'WO-2025-005', partName: 'Avionics Display', serviceType: 'Replacement', estimatedDelivery: '2025-04-12 to 2025-04-16' },
-];
+import React, { useState, useEffect } from 'react';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const ServiceOrdersSection = ({ setActiveSection }) => {
+  const [serviceOrders, setServiceOrders] = useState([]);
+
+  useEffect(() => {
+    const fetchServiceOrders = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/service-orders');
+        const data = await response.json();
+        setServiceOrders(data);
+      } catch (err) {
+        console.error('Error fetching service orders:', err);
+      }
+    };
+    fetchServiceOrders();
+  }, []);
+
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
       <TableContainer
@@ -44,13 +53,12 @@ const ServiceOrdersSection = ({ setActiveSection }) => {
               <TableCell>Part Name</TableCell>
               <TableCell>Service Type</TableCell>
               <TableCell>Estimated Delivery Time</TableCell>
-              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {serviceOrdersData.map((order, index) => (
+            {serviceOrders.map((order, index) => (
               <TableRow
-                key={order.id}
+                key={order.serviceId}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -65,7 +73,7 @@ const ServiceOrdersSection = ({ setActiveSection }) => {
                 }}
               >
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-                  {order.id}
+                  {order.serviceId}
                 </TableCell>
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
                   {order.partName}
@@ -75,9 +83,6 @@ const ServiceOrdersSection = ({ setActiveSection }) => {
                 </TableCell>
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
                   {order.estimatedDelivery}
-                </TableCell>
-                <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-                  <Button onClick={() => setActiveSection('ServiceDetails')}>View Details</Button>
                 </TableCell>
               </TableRow>
             ))}

@@ -1,12 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
 
-const transactionsData = [
-  { id: 'TXN0xMRO238A', date: '2025-04-10', action: 'Part Serviced', partName: 'Jet Engine Core', notes: 'Overhaul Completed' },
-  { id: 'TXN0xMRO239B', date: '2025-04-09', action: 'QA Certification', partName: 'Jet Engine Core', notes: 'QA Passed, Issued' },
-];
-
 const TransactionsSection = () => {
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/mrotransactions');
+        const data = await response.json();
+        setTransactions(data);
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+  const handleVerify = async (txnId) => {
+    try {
+      const audit = {
+        auditId: `AUD-${Date.now()}`,
+        entity: 'Transaction',
+        audited: txnId,
+        date: new Date().toISOString().split('T')[0],
+        outcome: 'Verified',
+        notes: `Transaction ${txnId} verified`,
+      };
+      const response = await fetch('http://localhost:5000/api/audits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audit),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create audit record');
+      }
+      alert(`Transaction ${txnId} verified and audit record created`);
+    } catch (err) {
+      console.error('Error verifying transaction:', err);
+      alert('Failed to verify transaction');
+    }
+  };
+
   return (
     <Box sx={{ py: 8, px: { xs: 2, sm: 4 } }}>
       <TableContainer
@@ -48,9 +83,9 @@ const TransactionsSection = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {transactionsData.map((txn, index) => (
+            {transactions.map((txn, index) => (
               <TableRow
-                key={txn.id}
+                key={txn.txnId}
                 sx={{
                   bgcolor: index % 2 === 0 ? 'white' : 'grey.50',
                   '&:hover': {
@@ -65,7 +100,7 @@ const TransactionsSection = () => {
                 }}
               >
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-                  {txn.id}
+                  {txn.txnId}
                 </TableCell>
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
                   {txn.date}
@@ -80,7 +115,7 @@ const TransactionsSection = () => {
                   {txn.notes}
                 </TableCell>
                 <TableCell sx={{ fontSize: '1.1rem', color: 'grey.900', py: 2.5, px: 4, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-                  <Button>Verify</Button>
+                  <Button onClick={() => handleVerify(txn.txnId)}>Verify</Button>
                 </TableCell>
               </TableRow>
             ))}

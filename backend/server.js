@@ -32,6 +32,12 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/manufacturer', manufacturerRoutes); // ✅ Added here
 
+
+app.use('/api/service-orders', require('./routes/serviceOrderRoutes'));
+app.use('/api/part-requests', require('./routes/partRequestRoutes'));
+app.use('/api/mrotransactions', require('./routes/mroTransactionRoutes'));
+app.use('/api/audits', require('./routes/auditRoutes'));
+
 // Verified users route
 app.get('/api/verification/verified', async (req, res) => {
   try {
